@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nested Comments</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .comment-box {
+      margin-bottom: 20px;
+    }
+    .comment {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+    }
+    .comment .reply-btn {
+      cursor: pointer;
+      color: blue;
+      font-size: 0.9rem;
+      margin-top: 5px;
+      display: inline-block;
+    }
+    .reply-input {
+      margin-top: 5px;
+      display: flex;
+      gap: 5px;
+    }
+    .nested {
+      margin-left: 20px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Nested Comments</h2>
+  
+  <div class="comment-box">
+    <input type="text" id="mainCommentInput" placeholder="Add a comment..." />
+    <button onclick="addComment()">Add Comment</button>
+  </div>
+
+  <div id="commentsContainer"></div>
+
+  <script>
+    let commentsData = [];
+
+    function addComment(parentId = null, text = null) {
+      let input;
+      if (parentId === null) {
+        input = document.getElementById('mainCommentInput');
+      } else {
+        input = document.getElementById('replyInput-' + parentId);
+      }
+
+      const commentText = text || input.value.trim();
+      if (!commentText) return;
+
+      const comment = {
+        id: Date.now(),
+        text: commentText,
+        replies: []
+      };
+
+      if (parentId === null) {
+        commentsData.push(comment);
+      } else {
+        const parentComment = findCommentById(commentsData, parentId);
+        parentComment.replies.push(comment);
+        // Remove reply input after submitting
+        const replyDiv = document.getElementById('replyDiv-' + parentId);
+        if (replyDiv) replyDiv.remove();
+      }
+
+      if (!text) input.value = '';
+      renderComments();
+    }
+
+    function findCommentById(comments, id) {
+      for (let comment of comments) {
+        if (comment.id === id) return comment;
+        if (comment.replies.length) {
+          const found = findCommentById(comment.replies, id);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+
+    function showReplyInput(parentId) {
+      const existingInput = document.getElementById('replyDiv-' + parentId);
+      if (existingInput) return; // prevent multiple inputs
+
+      const parentDiv = document.getElementById('comment-' + parentId);
+      const div = document.createElement('div');
+      div.id = 'replyDiv-' + parentId;
+      div.className = 'reply-input';
+      div.innerHTML = `
+        <input type="text" id="replyInput-${parentId}" placeholder="Write a reply..." />
+        <button onclick="addComment(${parentId})">Reply</button>
+      `;
+      parentDiv.appendChild(div);
+    }
+
+    function renderComments() {
+      const container = document.getElementById('commentsContainer');
+      container.innerHTML = '';
+      commentsData.forEach(comment => {
+        container.appendChild(createCommentElement(comment));
+      });
+    }
+
+    function createCommentElement(comment) {
+      const div = document.createElement('div');
+      div.className = 'comment';
+      div.id = 'comment-' + comment.id;
+
+      div.innerHTML = `
+        <div>${comment.text}</div>
+        <span class="reply-btn" onclick="showReplyInput(${comment.id})">Reply</span>
+      `;
+
+      if (comment.replies.length > 0) {
+        const nestedDiv = document.createElement('div');
+        nestedDiv.className = 'nested';
+        comment.replies.forEach(reply => {
+          nestedDiv.appendChild(createCommentElement(reply));
+        });
+        div.appendChild(nestedDiv);
+      }
+
+      return div;
+    }
+
+  </script>
+</body>
+</html>
